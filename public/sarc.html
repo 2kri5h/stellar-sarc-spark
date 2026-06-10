@@ -390,29 +390,34 @@ function Hero({ onPickPortfolio }) {
       const pulse = 1 + Math.sin(t * 1.4) * 0.03;
       sun.scale.setScalar(pulse);
 
+      belt.rotation.y = t * 0.04;
+
+      const tmp = new THREE.Vector3();
       planetMeshes.forEach(m => {
         const { radius, speed, phase } = m.userData;
         m.position.x = Math.cos(phase + t * speed) * radius;
         m.position.z = Math.sin(phase + t * speed) * radius;
-        m.position.y = Math.sin(t * 0.3 + phase) * 0.2;
+        m.position.y = Math.sin(t * 0.3 + phase) * 0.25;
         m.rotation.y += 0.01;
 
-        // smooth scale toward target
         m.userData.baseScale += (m.userData.targetScale - m.userData.baseScale) * 0.12;
         m.scale.setScalar(m.userData.baseScale);
 
-        // label
-        const sp = projectToScreen(m.position.clone().add(new THREE.Vector3(0, 0.8, 0)));
+        // label uses WORLD position (system is tilted)
+        m.getWorldPosition(tmp); tmp.y += 0.9;
+        const sp = projectToScreen(tmp);
         m.userData.label.style.left = sp.x + 'px';
         m.userData.label.style.top  = sp.y + 'px';
       });
 
-      // sun label position
-      const sunSp = projectToScreen(new THREE.Vector3(0,0,0));
+      // sun label
+      sunGroup.getWorldPosition(tmp);
+      const sunSp = projectToScreen(tmp);
       sunLabel.style.left = sunSp.x + 'px';
       sunLabel.style.top  = sunSp.y + 'px';
 
-      stars.rotation.y = t * 0.005;
+      starsFar.rotation.y  = t * 0.004;
+      starsNear.rotation.y = t * 0.012;
 
       // hover detection
       raycaster.setFromCamera(mouse, camera);
