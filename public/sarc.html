@@ -275,7 +275,7 @@ function Hero({ onPickPortfolio }) {
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
     glow.scale.set(9, 9, 1);
     sunGroup.add(glow);
-    scene.add(sunGroup);
+    system.add(sunGroup);
 
     // SUN label "SARC"
     const sunLabel = document.createElement('div');
@@ -283,37 +283,60 @@ function Hero({ onPickPortfolio }) {
     sunLabel.style.cssText = "position:absolute;font-family:'Fraunces',serif;font-weight:600;font-size:clamp(28px,4vw,52px);color:#0a0f24;letter-spacing:.04em;transform:translate(-50%,-50%);text-shadow:0 0 18px rgba(255,220,150,0.6);";
     labelLayer.appendChild(sunLabel);
 
-    // Orbital rings (visual)
-    const ringMat = new THREE.LineBasicMaterial({ color: 0x2a3a78, transparent: true, opacity: 0.45 });
-    function makeRing(radius) {
+    // Orbital rings (visual) - dashed feel via low opacity
+    function makeRing(radius, color, opacity) {
       const pts = [];
-      const seg = 128;
+      const seg = 192;
       for (let i = 0; i <= seg; i++) {
         const a = (i/seg) * Math.PI * 2;
         pts.push(new THREE.Vector3(Math.cos(a)*radius, 0, Math.sin(a)*radius));
       }
       const g = new THREE.BufferGeometry().setFromPoints(pts);
-      return new THREE.Line(g, ringMat);
+      return new THREE.Line(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
     }
     const R_INNER = 6.5;
     const R_OUTER = 11.5;
-    scene.add(makeRing(R_INNER));
-    scene.add(makeRing(R_OUTER));
+    system.add(makeRing(R_INNER, 0x5b7cff, 0.35));
+    system.add(makeRing(R_OUTER, 0xffb066, 0.28));
+
+    // Asteroid dust belt between rings
+    const beltGeo = new THREE.BufferGeometry();
+    const beltN = 600;
+    const beltPos = new Float32Array(beltN * 3);
+    for (let i = 0; i < beltN; i++) {
+      const r = 8.6 + (Math.random() - 0.5) * 1.2;
+      const a = Math.random() * Math.PI * 2;
+      beltPos[i*3]   = Math.cos(a) * r;
+      beltPos[i*3+1] = (Math.random() - 0.5) * 0.4;
+      beltPos[i*3+2] = Math.sin(a) * r;
+    }
+    beltGeo.setAttribute('position', new THREE.BufferAttribute(beltPos, 3));
+    const belt = new THREE.Points(beltGeo, new THREE.PointsMaterial({ color: 0xffcd8a, size: 0.08, transparent: true, opacity: 0.6 }));
+    system.add(belt);
 
     // planets
     const planetMeshes = [];
     PORTFOLIOS.forEach((p, idx) => {
       const radius = p.ring === 'inner' ? R_INNER : R_OUTER;
-      const size = p.ring === 'inner' ? 0.55 : 0.7;
+      const size = p.ring === 'inner' ? 0.55 : 0.78;
       const color = new THREE.Color(p.color);
       const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(size, 32, 32),
-        new THREE.MeshStandardMaterial({ color, emissive: color.clone().multiplyScalar(0.4), roughness: 0.4, metalness: 0.2 })
+        new THREE.MeshStandardMaterial({ color, emissive: color.clone().multiplyScalar(0.35), roughness: 0.55, metalness: 0.25 })
       );
+      // Give every other outer planet a Saturn-style ring
+      if (p.ring === 'outer' && idx % 2 === 0) {
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(size * 1.4, size * 2.1, 48),
+          new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.35 })
+        );
+        ring.rotation.x = Math.PI / 2.4;
+        mesh.add(ring);
+      }
       const speed = (p.ring === 'inner' ? 0.18 : 0.10) + idx * 0.008;
       const phase = (p.angle * Math.PI) / 180;
       mesh.userData = { radius, speed, phase, portfolio: p, baseScale: 1, targetScale: 1 };
-      scene.add(mesh);
+      system.add(mesh);
       planetMeshes.push(mesh);
 
       const label = document.createElement('div');
@@ -325,10 +348,13 @@ function Hero({ onPickPortfolio }) {
     });
 
     // lights
-    scene.add(new THREE.AmbientLight(0x8090c0, 0.6));
-    const pl = new THREE.PointLight(0xffd98a, 2.4, 80);
+    scene.add(new THREE.AmbientLight(0x8090c0, 0.55));
+    const pl = new THREE.PointLight(0xffd98a, 2.6, 100);
     pl.position.set(0,0,0);
-    scene.add(pl);
+    system.add(pl);
+    const rim = new THREE.DirectionalLight(0x5b7cff, 0.4);
+    rim.position.set(-10, 8, -6);
+    scene.add(rim);
 
     // raycaster
     const raycaster = new THREE.Raycaster();
