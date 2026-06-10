@@ -200,9 +200,15 @@ function Hero({ onPickPortfolio }) {
     const H = () => mount.clientHeight;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(55, W() / H(), 0.1, 2000);
-    camera.position.set(0, 6, 26);
+    const camera = new THREE.PerspectiveCamera(50, W() / H(), 0.1, 2000);
+    camera.position.set(0, 9, 28);
     camera.lookAt(0, 0, 0);
+
+    // tilt the whole orbital system for depth
+    const system = new THREE.Group();
+    system.rotation.x = 0.35;
+    system.rotation.z = -0.08;
+    scene.add(system);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -215,21 +221,38 @@ function Hero({ onPickPortfolio }) {
     labelLayer.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;";
     mount.appendChild(labelLayer);
 
-    // starfield
-    const starGeo = new THREE.BufferGeometry();
-    const starCount = 1200;
-    const positions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount; i++) {
-      const r = 200 + Math.random() * 400;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      positions[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-      positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-      positions[i*3+2] = r * Math.cos(phi);
+    // starfield — two layers, parallax
+    function makeStars(count, rMin, rMax, color, size, opacity) {
+      const g = new THREE.BufferGeometry();
+      const pos = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        const r = rMin + Math.random() * (rMax - rMin);
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+        pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+        pos[i*3+2] = r * Math.cos(phi);
+      }
+      g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      return new THREE.Points(g, new THREE.PointsMaterial({ color, size, transparent: true, opacity, depthWrite: false }));
     }
-    starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xbfd0ff, size: 0.7, transparent: true, opacity: 0.7 }));
-    scene.add(stars);
+    const starsFar  = makeStars(1400, 250, 600, 0xbfd0ff, 0.6, 0.55);
+    const starsNear = makeStars(400, 80, 180, 0xfff0c8, 1.1, 0.85);
+    scene.add(starsFar); scene.add(starsNear);
+
+    // soft nebula sprites (colored fog)
+    function nebula(color, scale, x, y, z) {
+      const c = document.createElement('canvas'); c.width = c.height = 256;
+      const cx = c.getContext('2d');
+      const g = cx.createRadialGradient(128,128,0,128,128,128);
+      g.addColorStop(0, color + '88'); g.addColorStop(0.5, color + '22'); g.addColorStop(1, color + '00');
+      cx.fillStyle = g; cx.fillRect(0,0,256,256);
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+      s.scale.set(scale, scale, 1); s.position.set(x, y, z); return s;
+    }
+    scene.add(nebula('#5b7cff', 60, -40, 10, -80));
+    scene.add(nebula('#ff8a5b', 50,  50, -8, -90));
+    scene.add(nebula('#a16bff', 45,   0, 30, -120));
 
     // SUN
     const sunGroup = new THREE.Group();
@@ -252,7 +275,7 @@ function Hero({ onPickPortfolio }) {
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
     glow.scale.set(9, 9, 1);
     sunGroup.add(glow);
-    scene.add(sunGroup);
+    system.add(sunGroup);
 
     // SUN label "SARC"
     const sunLabel = document.createElement('div');
@@ -260,37 +283,60 @@ function Hero({ onPickPortfolio }) {
     sunLabel.style.cssText = "position:absolute;font-family:'Fraunces',serif;font-weight:600;font-size:clamp(28px,4vw,52px);color:#0a0f24;letter-spacing:.04em;transform:translate(-50%,-50%);text-shadow:0 0 18px rgba(255,220,150,0.6);";
     labelLayer.appendChild(sunLabel);
 
-    // Orbital rings (visual)
-    const ringMat = new THREE.LineBasicMaterial({ color: 0x2a3a78, transparent: true, opacity: 0.45 });
-    function makeRing(radius) {
+    // Orbital rings (visual) - dashed feel via low opacity
+    function makeRing(radius, color, opacity) {
       const pts = [];
-      const seg = 128;
+      const seg = 192;
       for (let i = 0; i <= seg; i++) {
         const a = (i/seg) * Math.PI * 2;
         pts.push(new THREE.Vector3(Math.cos(a)*radius, 0, Math.sin(a)*radius));
       }
       const g = new THREE.BufferGeometry().setFromPoints(pts);
-      return new THREE.Line(g, ringMat);
+      return new THREE.Line(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
     }
     const R_INNER = 6.5;
     const R_OUTER = 11.5;
-    scene.add(makeRing(R_INNER));
-    scene.add(makeRing(R_OUTER));
+    system.add(makeRing(R_INNER, 0x5b7cff, 0.35));
+    system.add(makeRing(R_OUTER, 0xffb066, 0.28));
+
+    // Asteroid dust belt between rings
+    const beltGeo = new THREE.BufferGeometry();
+    const beltN = 600;
+    const beltPos = new Float32Array(beltN * 3);
+    for (let i = 0; i < beltN; i++) {
+      const r = 8.6 + (Math.random() - 0.5) * 1.2;
+      const a = Math.random() * Math.PI * 2;
+      beltPos[i*3]   = Math.cos(a) * r;
+      beltPos[i*3+1] = (Math.random() - 0.5) * 0.4;
+      beltPos[i*3+2] = Math.sin(a) * r;
+    }
+    beltGeo.setAttribute('position', new THREE.BufferAttribute(beltPos, 3));
+    const belt = new THREE.Points(beltGeo, new THREE.PointsMaterial({ color: 0xffcd8a, size: 0.08, transparent: true, opacity: 0.6 }));
+    system.add(belt);
 
     // planets
     const planetMeshes = [];
     PORTFOLIOS.forEach((p, idx) => {
       const radius = p.ring === 'inner' ? R_INNER : R_OUTER;
-      const size = p.ring === 'inner' ? 0.55 : 0.7;
+      const size = p.ring === 'inner' ? 0.55 : 0.78;
       const color = new THREE.Color(p.color);
       const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(size, 32, 32),
-        new THREE.MeshStandardMaterial({ color, emissive: color.clone().multiplyScalar(0.4), roughness: 0.4, metalness: 0.2 })
+        new THREE.MeshStandardMaterial({ color, emissive: color.clone().multiplyScalar(0.35), roughness: 0.55, metalness: 0.25 })
       );
+      // Give every other outer planet a Saturn-style ring
+      if (p.ring === 'outer' && idx % 2 === 0) {
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(size * 1.4, size * 2.1, 48),
+          new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.35 })
+        );
+        ring.rotation.x = Math.PI / 2.4;
+        mesh.add(ring);
+      }
       const speed = (p.ring === 'inner' ? 0.18 : 0.10) + idx * 0.008;
       const phase = (p.angle * Math.PI) / 180;
       mesh.userData = { radius, speed, phase, portfolio: p, baseScale: 1, targetScale: 1 };
-      scene.add(mesh);
+      system.add(mesh);
       planetMeshes.push(mesh);
 
       const label = document.createElement('div');
@@ -302,10 +348,13 @@ function Hero({ onPickPortfolio }) {
     });
 
     // lights
-    scene.add(new THREE.AmbientLight(0x8090c0, 0.6));
-    const pl = new THREE.PointLight(0xffd98a, 2.4, 80);
+    scene.add(new THREE.AmbientLight(0x8090c0, 0.55));
+    const pl = new THREE.PointLight(0xffd98a, 2.6, 100);
     pl.position.set(0,0,0);
-    scene.add(pl);
+    system.add(pl);
+    const rim = new THREE.DirectionalLight(0x5b7cff, 0.4);
+    rim.position.set(-10, 8, -6);
+    scene.add(rim);
 
     // raycaster
     const raycaster = new THREE.Raycaster();
@@ -341,29 +390,34 @@ function Hero({ onPickPortfolio }) {
       const pulse = 1 + Math.sin(t * 1.4) * 0.03;
       sun.scale.setScalar(pulse);
 
+      belt.rotation.y = t * 0.04;
+
+      const tmp = new THREE.Vector3();
       planetMeshes.forEach(m => {
         const { radius, speed, phase } = m.userData;
         m.position.x = Math.cos(phase + t * speed) * radius;
         m.position.z = Math.sin(phase + t * speed) * radius;
-        m.position.y = Math.sin(t * 0.3 + phase) * 0.2;
+        m.position.y = Math.sin(t * 0.3 + phase) * 0.25;
         m.rotation.y += 0.01;
 
-        // smooth scale toward target
         m.userData.baseScale += (m.userData.targetScale - m.userData.baseScale) * 0.12;
         m.scale.setScalar(m.userData.baseScale);
 
-        // label
-        const sp = projectToScreen(m.position.clone().add(new THREE.Vector3(0, 0.8, 0)));
+        // label uses WORLD position (system is tilted)
+        m.getWorldPosition(tmp); tmp.y += 0.9;
+        const sp = projectToScreen(tmp);
         m.userData.label.style.left = sp.x + 'px';
         m.userData.label.style.top  = sp.y + 'px';
       });
 
-      // sun label position
-      const sunSp = projectToScreen(new THREE.Vector3(0,0,0));
+      // sun label
+      sunGroup.getWorldPosition(tmp);
+      const sunSp = projectToScreen(tmp);
       sunLabel.style.left = sunSp.x + 'px';
       sunLabel.style.top  = sunSp.y + 'px';
 
-      stars.rotation.y = t * 0.005;
+      starsFar.rotation.y  = t * 0.004;
+      starsNear.rotation.y = t * 0.012;
 
       // hover detection
       raycaster.setFromCamera(mouse, camera);
@@ -408,20 +462,21 @@ function Hero({ onPickPortfolio }) {
       <div ref={mountRef} className="absolute inset-0" />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-navy-900" />
 
-      {/* top-left overlay */}
-      <div className="absolute z-10 top-28 left-6 md:left-12 max-w-md">
-        <p className="text-xs tracking-[0.35em] uppercase text-gold/80 mb-3">Est. 2008</p>
-        <h1 className="display text-4xl md:text-5xl leading-tight text-white">
-          A constellation of <span className="text-gold">student & alumni</span> at IIT Bombay.
+      {/* top-left overlay — short tagline only, full About lives below */}
+      <div className="absolute z-10 top-28 left-6 md:left-12 max-w-xl pointer-events-none">
+        <p className="text-[10px] md:text-xs tracking-[0.4em] uppercase text-gold/80 mb-3">Est. 2008 · IIT Bombay</p>
+        <h1 className="display text-4xl md:text-6xl leading-[1.05] text-white">
+          A constellation of<br/><span className="text-gold italic">student & alumni.</span>
         </h1>
-        <p className="mt-5 text-white/70 text-sm md:text-[15px] leading-relaxed">{ABOUT}</p>
+        <p className="mt-4 text-white/55 text-sm tracking-wide max-w-sm">
+          Eight portfolios. One orbit. Tap a planet to explore — or scroll for the full story.
+        </p>
       </div>
 
       {/* bottom ticker */}
-      <div className="absolute z-10 bottom-10 inset-x-0 flex flex-col items-center">
-        <p className="text-[10px] tracking-[0.4em] uppercase text-white/40 mb-2">Now Orbiting</p>
+      <div className="absolute z-10 bottom-8 inset-x-0 flex flex-col items-center pointer-events-none">
+        <p className="text-[10px] tracking-[0.4em] uppercase text-white/40 mb-1">Now Orbiting</p>
         <EventsTicker />
-        <p className="mt-6 text-[10px] tracking-[0.3em] uppercase text-white/30">Click a planet to explore the portfolio</p>
       </div>
     </section>
   );
@@ -446,6 +501,24 @@ function EventsTicker() {
         </motion.span>
       </AnimatePresence>
     </div>
+  );
+}
+
+/* ===================== ABOUT ===================== */
+function AboutSection() {
+  return (
+    <section id="about" className="relative bg-navy-900 py-28 md:py-36 px-6 md:px-12 overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none opacity-[0.07]"
+           style={{background: "radial-gradient(800px 400px at 20% 30%, #ffd98a, transparent), radial-gradient(700px 500px at 80% 70%, #5b7cff, transparent)"}} />
+      <div className="relative max-w-5xl mx-auto">
+        <p className="text-[11px] tracking-[0.4em] uppercase text-gold/80 mb-6">About SARC</p>
+        <p className="display text-2xl md:text-[2.1rem] leading-[1.45] text-white/90">
+          {ABOUT}
+        </p>
+        <div className="mt-12 h-px w-24 bg-gold/50" />
+        <p className="mt-6 text-sm tracking-[0.3em] uppercase text-white/40">Dean ACR Office · IIT Bombay</p>
+      </div>
+    </section>
   );
 }
 
@@ -704,6 +777,7 @@ function App() {
     <>
       <Nav onJump={onJump} />
       <Hero onPickPortfolio={setDrawer} />
+      <AboutSection />
       <Carousel />
       <EventsSection />
       <PortfolioSections onOpen={setDrawer} />
