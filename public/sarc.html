@@ -408,20 +408,21 @@ function Hero({ onPickPortfolio }) {
       <div ref={mountRef} className="absolute inset-0" />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-navy-900" />
 
-      {/* top-left overlay */}
-      <div className="absolute z-10 top-28 left-6 md:left-12 max-w-md">
-        <p className="text-xs tracking-[0.35em] uppercase text-gold/80 mb-3">Est. 2008</p>
-        <h1 className="display text-4xl md:text-5xl leading-tight text-white">
-          A constellation of <span className="text-gold">student & alumni</span> at IIT Bombay.
+      {/* top-left overlay — short tagline only, full About lives below */}
+      <div className="absolute z-10 top-28 left-6 md:left-12 max-w-xl pointer-events-none">
+        <p className="text-[10px] md:text-xs tracking-[0.4em] uppercase text-gold/80 mb-3">Est. 2008 · IIT Bombay</p>
+        <h1 className="display text-4xl md:text-6xl leading-[1.05] text-white">
+          A constellation of<br/><span className="text-gold italic">student & alumni.</span>
         </h1>
-        <p className="mt-5 text-white/70 text-sm md:text-[15px] leading-relaxed">{ABOUT}</p>
+        <p className="mt-4 text-white/55 text-sm tracking-wide max-w-sm">
+          Eight portfolios. One orbit. Tap a planet to explore — or scroll for the full story.
+        </p>
       </div>
 
       {/* bottom ticker */}
-      <div className="absolute z-10 bottom-10 inset-x-0 flex flex-col items-center">
-        <p className="text-[10px] tracking-[0.4em] uppercase text-white/40 mb-2">Now Orbiting</p>
+      <div className="absolute z-10 bottom-8 inset-x-0 flex flex-col items-center pointer-events-none">
+        <p className="text-[10px] tracking-[0.4em] uppercase text-white/40 mb-1">Now Orbiting</p>
         <EventsTicker />
-        <p className="mt-6 text-[10px] tracking-[0.3em] uppercase text-white/30">Click a planet to explore the portfolio</p>
       </div>
     </section>
   );
