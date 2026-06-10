@@ -1,29 +1,29 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "SARC · IIT Bombay" },
+      { name: "description", content: "Student Alumni Relations Cell, IIT Bombay — connecting students and alumni since 2008." },
+      { property: "og:title", content: "SARC · IIT Bombay" },
+      { property: "og:description", content: "Student Alumni Relations Cell, IIT Bombay — connecting students and alumni since 2008." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "SARC · IIT Bombay" },
+      { name: "twitter:description", content: "Student Alumni Relations Cell, IIT Bombay — connecting students and alumni since 2008." },
     ],
   }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
+  useEffect(() => {
+    window.location.replace("/sarc.html");
+  }, []);
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div style={{ minHeight: "100vh", background: "#05070f", color: "#e7ecf7", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui, sans-serif" }}>
+      Loading SARC…
     </div>
   );
 }
