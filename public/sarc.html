@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SARC · IIT Bombay</title>
+<meta name="description" content="Student Alumni Relations Cell, IIT Bombay — connecting students and alumni since 2008." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          navy: { 950: '#05070f', 900: '#070b1a', 800: '#0b1230', 700: '#11193f' },
+          gold: { DEFAULT: '#f0c674', soft: '#ffd98a', deep: '#c9952f' },
+          ice:  { DEFAULT: '#8fb8ff' },
+        },
+        fontFamily: {
+          display: ['Fraunces', 'serif'],
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+        },
+        boxShadow: {
+          glow: '0 0 40px -8px rgba(240,198,116,0.45)',
+          card: '0 20px 60px -20px rgba(0,0,0,0.6)',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body {
+    background: radial-gradient(1200px 700px at 70% -10%, #11193f 0%, #070b1a 55%, #05070f 100%);
+    color: #e7ecf7;
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+  .display { font-family: 'Fraunces', serif; font-weight: 500; letter-spacing: -0.01em; }
+  .planet-label {
+    color: #cfd8ee; font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase; pointer-events: none;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.7);
+    font-family: 'Inter', sans-serif; font-weight: 500;
+    transform: translate(-50%, -150%);
+    white-space: nowrap;
+  }
+  .grain::before {
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:1;
+    background-image: radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 3px 3px; mix-blend-mode: overlay; opacity:.5;
+  }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #05070f; }
+  ::-webkit-scrollbar-thumb { background: #1a2350; border-radius: 4px; }
+</style>
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+</head>
+<body class="grain">
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef, useMemo } = React;
+const { motion, AnimatePresence } = window.Motion || window.FramerMotion;
+
+/* ===================== CONTENT (from uploaded HTML) ===================== */
+
+const ABOUT = "Student Alumni Relations Cell (SARC) was established in 2008 to convey and harness the connection of the alumni with the institute. It is a student-run body and a crucial part of the Dean Alumni and Corporate Relations (Dean ACR) Office, whose primary goal is to promote closer connections between current students and alumni, fostering a collaborative atmosphere of ideas, respect, knowledge, and values that reflect the mission of our institution.";
+
+const PORTFOLIOS = [
+  {
+    id: "web", name: "Web", color: "#6aa9ff", ring: "inner", angle: 0,
+    mission: "The web team is responsible for building all the portals and websites of SARC. Significant projects include the websites of ASMP, Alumination, PMP, ILP, Seekout and Yearbook.",
+    extra: "Pre-requisites: Passion for problem solving and interest in coding, website and app development — both frontend and backend. Enthusiasm to learn new web technologies and implement innovative features.",
+    events: ["Alumination Portal", "Seekout Site", "Yearbook"],
+  },
+  {
+    id: "design", name: "Design", color: "#ff8fb1", ring: "inner", angle: 90,
+    mission: "Design is thinking made visual. The design team handles branding, posters, invites, flexes, event videos, brochures, handbooks, websites, portals, hoodies and T-shirts — publicising every program SARC organises.",
+    extra: "Pre-requisites: A passionate and creative mind with lots of enthusiasm.",
+    events: ["Branding", "Event Collaterals", "Merch"],
+  },
+  {
+    id: "mpr", name: "Media & PR", color: "#b58bff", ring: "inner", angle: 180,
+    mission: "Media & PR is the face of SARC for student and alumni bodies — managing social media, ideating themes and publicity strategies, and conducting alumni interviews. MPR takes pride in organising the crypt hunt event, Seekout, and publishes the Dean's monthly newsletter — The Knowledge Tree.",
+    extra: "Pre-requisites: Strong ideation skills, interest in writing, and a creative mind.",
+    events: ["Seekout", "Knowledge Tree", "Alumni Interviews"],
+  },
+  {
+    id: "marketing", name: "Marketing", color: "#ffd27a", ring: "inner", angle: 270,
+    mission: "Marketing focuses on crafting impactful campaigns to promote SARC's events and initiatives — ideating outreach strategies, ensuring maximum engagement, and bringing in sponsors to provide financial support that enhances the scale and impact of every event.",
+    extra: "Pre-requisites: Proficiency in communication and strong negotiation skills.",
+    events: ["Sponsorships", "Outreach", "Campaigns"],
+  },
+  {
+    id: "operations", name: "Operations", color: "#7af0c8", ring: "outer", angle: 45,
+    mission: "The operations team manages on-ground execution of events — budget planning, permissions, logistics, finances and coordination. Operations leads Alumination, Innovation Expo and SAM, and collaborates with marketing to secure deals.",
+    extra: "Candidates should have street smartness, presence of mind and strong soft skills.",
+    events: ["Alumination", "Innovation Expo", "SAM"],
+  },
+  {
+    id: "hda", name: "HDA", color: "#ff9b6a", ring: "outer", angle: 135,
+    mission: "The Hostel & Department Affairs portfolio leads initiatives that enrich student life through mentorship, career guidance, academic support and alumni engagement — including PMP, Core Talks, MI/GD, ILP, Hostalgia and the Exam Series.",
+    extra: "We collaborate with Hostel and Department Councils to ensure wide outreach — covering internship and placement guidance, grad-school prep and student–alumni networks.",
+    events: ["PMP", "ILP", "Hostalgia"],
+  },
+  {
+    id: "asmp", name: "ASMP", color: "#9ad7ff", ring: "outer", angle: 225,
+    mission: "The ASMP team manages allocation of 300+ mentors with 500+ mentees, plus ideation and execution of events that enhance mentor–mentee interaction — Nail the Prep, Shadow Program, Break the Ice, Group Mentoring and Transverse Mentoring.",
+    extra: "Pre-requisites: Enthusiastic individuals with innovative ideas and strong management skills. Good communication is a brownie point.",
+    events: ["Nail the Prep", "Shadow Program", "Break the Ice"],
+  },
+  {
+    id: "events", name: "Events", color: "#ffe07a", ring: "outer", angle: 315,
+    mission: "The events portfolio bridges the IIT Bombay alumni network with students — taking lead on Alumination, talkshows like Trailblazers, UPSC Talks, UG Orientation, reunions and the class song.",
+    extra: "Pre-requisites: A clear and sharp mind with creative ideation and on-spot decision-making skills.",
+    events: ["Alumination", "Trailblazers", "Reunions"],
+  },
+];
+
+const EVENT_CARDS = [
+  { name: "Alumination", desc: "Flagship alumni–student gathering of the year.", status: "Upcoming" },
+  { name: "Seekout", desc: "SARC's signature crypt-hunt experience by Media & PR.", status: "Upcoming" },
+  { name: "Yearbook", desc: "A lasting record of every graduating batch.", status: "Ongoing" },
+  { name: "ASMP", desc: "Alumni–Student Mentorship Program connecting 500+ mentees.", status: "Ongoing" },
+  { name: "ILP", desc: "Industrial Learning Program for industry exposure.", status: "Past" },
+  { name: "PMP", desc: "Placement Mentoring Program by HDA.", status: "Past" },
+];
+
+const TICKER_ITEMS = ["Alumination", "Seekout", "Yearbook"];
+
+const CAROUSEL_IMAGES = [
+  "carousel1.jpg","carousel2.jpg","carousel3.jpg","carousel4.jpg","carousel5.jpg",
+  "carousel6.jpg","carousel7.jpg","carousel8.jpg","carousel9.jpg","carousel10.jpg",
+].map(n => `./SARC, IIT Bombay_files/${n}`);
+
+const SOCIALS = [
+  { name: "Facebook",  href: "#", path: "M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.7l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z" },
+  { name: "Instagram", href: "#", path: "M12 2.2c3.2 0 3.6 0 4.8.1 1.2.1 1.9.3 2.3.4.6.2 1 .5 1.5 1s.8.9 1 1.5c.2.5.3 1.1.4 2.3.1 1.3.1 1.7.1 4.8s0 3.6-.1 4.8c-.1 1.2-.3 1.9-.4 2.3-.2.6-.5 1-1 1.5s-.9.8-1.5 1c-.5.2-1.1.3-2.3.4-1.3.1-1.7.1-4.8.1s-3.6 0-4.8-.1c-1.2-.1-1.9-.3-2.3-.4-.6-.2-1-.5-1.5-1s-.8-.9-1-1.5c-.2-.5-.3-1.1-.4-2.3C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.8c.1-1.2.3-1.9.4-2.3.2-.6.5-1 1-1.5s.9-.8 1.5-1c.5-.2 1.1-.3 2.3-.4C8.4 2.2 8.8 2.2 12 2.2zm0 1.8c-3.1 0-3.5 0-4.7.1-1.1.1-1.7.2-2.1.4-.5.2-.9.4-1.3.8s-.6.8-.8 1.3c-.2.4-.3 1-.4 2.1C2.6 8.5 2.6 8.9 2.6 12s0 3.5.1 4.7c.1 1.1.2 1.7.4 2.1.2.5.4.9.8 1.3s.8.6 1.3.8c.4.2 1 .3 2.1.4 1.2.1 1.6.1 4.7.1s3.5 0 4.7-.1c1.1-.1 1.7-.2 2.1-.4.5-.2.9-.4 1.3-.8s.6-.8.8-1.3c.2-.4.3-1 .4-2.1.1-1.2.1-1.6.1-4.7s0-3.5-.1-4.7c-.1-1.1-.2-1.7-.4-2.1-.2-.5-.4-.9-.8-1.3s-.8-.6-1.3-.8c-.4-.2-1-.3-2.1-.4C15.5 4 15.1 4 12 4zm0 3.4a4.6 4.6 0 1 1 0 9.2 4.6 4.6 0 0 1 0-9.2zm0 1.8a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zm5.8-2a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0z" },
+  { name: "LinkedIn",  href: "#", path: "M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3V9zm7 0h3.8v1.7h.1c.5-.9 1.8-1.9 3.7-1.9 4 0 4.7 2.6 4.7 6V21h-4v-5.3c0-1.3 0-2.9-1.8-2.9-1.8 0-2 1.4-2 2.8V21h-4V9z" },
+  { name: "YouTube",   href: "#", path: "M23 7.5s-.2-1.6-.9-2.3c-.8-.9-1.8-.9-2.2-1C16.8 4 12 4 12 4s-4.8 0-7.9.2c-.4 0-1.4.1-2.2 1C1.2 5.9 1 7.5 1 7.5S.8 9.4.8 11.3v1.4C.8 14.6 1 16.5 1 16.5s.2 1.6.9 2.3c.8.9 1.9.9 2.4 1 1.7.2 7.7.2 7.7.2s4.8 0 7.9-.2c.4 0 1.4-.1 2.2-1 .7-.7.9-2.3.9-2.3s.2-1.9.2-3.8v-1.4c0-1.9-.2-3.8-.2-3.8zM9.8 15.4V8.6l6.3 3.4-6.3 3.4z" },
+];
+
+/* ===================== NAV ===================== */
+
+function Nav({ onJump }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-navy-900/60 border-b border-white/5">
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+        <a href="#top" className="flex items-baseline gap-2">
+          <span className="display text-2xl text-gold">SARC</span>
+          <span className="text-white/30">|</span>
+          <span className="text-xs tracking-[0.3em] text-white/70 uppercase">IIT Bombay</span>
+        </a>
+        <nav className="flex items-center gap-2 md:gap-8 text-sm">
+          <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+            <button className="tracking-[0.2em] text-white/80 hover:text-gold transition uppercase text-xs">Portfolios ▾</button>
+            <AnimatePresence>
+              {open && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
+                  className="absolute right-0 mt-3 w-56 bg-navy-800/95 border border-white/10 rounded-xl shadow-card py-2"
+                >
+                  {PORTFOLIOS.map(p => (
+                    <button key={p.id} onClick={() => { setOpen(false); onJump(`portfolio-${p.id}`); }}
+                      className="w-full text-left px-4 py-2 text-white/75 hover:text-gold hover:bg-white/5 text-sm tracking-wide">
+                      {p.name}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          <a href="#events-section" className="tracking-[0.2em] text-white/80 hover:text-gold transition uppercase text-xs">Events</a>
+          <a href="#team" className="tracking-[0.2em] text-white/80 hover:text-gold transition uppercase text-xs">Team</a>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+/* ===================== HERO — Three.js Solar System ===================== */
+
+function Hero({ onPickPortfolio }) {
+  const mountRef = useRef(null);
+
+  useEffect(() => {
+    const THREE = window.THREE;
+    const mount = mountRef.current;
+    const W = () => mount.clientWidth;
+    const H = () => mount.clientHeight;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, W() / H(), 0.1, 2000);
+    camera.position.set(0, 6, 26);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(W(), H());
+    renderer.setClearColor(0x000000, 0);
+    mount.appendChild(renderer.domElement);
+
+    // label overlay (DOM)
+    const labelLayer = document.createElement('div');
+    labelLayer.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;";
+    mount.appendChild(labelLayer);
+
+    // starfield
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 1200;
+    const positions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      const r = 200 + Math.random() * 400;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      positions[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+      positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+      positions[i*3+2] = r * Math.cos(phi);
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xbfd0ff, size: 0.7, transparent: true, opacity: 0.7 }));
+    scene.add(stars);
+
+    // SUN
+    const sunGroup = new THREE.Group();
+    const sun = new THREE.Mesh(
+      new THREE.SphereGeometry(1.8, 64, 64),
+      new THREE.MeshBasicMaterial({ color: 0xffd98a })
+    );
+    sunGroup.add(sun);
+
+    // glow sprite
+    const glowCanvas = document.createElement('canvas');
+    glowCanvas.width = glowCanvas.height = 256;
+    const gctx = glowCanvas.getContext('2d');
+    const grad = gctx.createRadialGradient(128,128,10,128,128,128);
+    grad.addColorStop(0, 'rgba(255,220,150,0.9)');
+    grad.addColorStop(0.3, 'rgba(255,180,90,0.45)');
+    grad.addColorStop(1, 'rgba(255,180,90,0)');
+    gctx.fillStyle = grad; gctx.fillRect(0,0,256,256);
+    const glowTex = new THREE.CanvasTexture(glowCanvas);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    glow.scale.set(9, 9, 1);
+    sunGroup.add(glow);
+    scene.add(sunGroup);
+
+    // SUN label "SARC"
+    const sunLabel = document.createElement('div');
+    sunLabel.textContent = "SARC";
+    sunLabel.style.cssText = "position:absolute;font-family:'Fraunces',serif;font-weight:600;font-size:clamp(28px,4vw,52px);color:#0a0f24;letter-spacing:.04em;transform:translate(-50%,-50%);text-shadow:0 0 18px rgba(255,220,150,0.6);";
+    labelLayer.appendChild(sunLabel);
+
+    // Orbital rings (visual)
+    const ringMat = new THREE.LineBasicMaterial({ color: 0x2a3a78, transparent: true, opacity: 0.45 });
+    function makeRing(radius) {
+      const pts = [];
+      const seg = 128;
+      for (let i = 0; i <= seg; i++) {
+        const a = (i/seg) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(a)*radius, 0, Math.sin(a)*radius));
+      }
+      const g = new THREE.BufferGeometry().setFromPoints(pts);
+      return new THREE.Line(g, ringMat);
+    }
+    const R_INNER = 6.5;
+    const R_OUTER = 11.5;
+    scene.add(makeRing(R_INNER));
+    scene.add(makeRing(R_OUTER));
+
+    // planets
+    const planetMeshes = [];
+    PORTFOLIOS.forEach((p, idx) => {
+      const radius = p.ring === 'inner' ? R_INNER : R_OUTER;
+      const size = p.ring === 'inner' ? 0.55 : 0.7;
+      const color = new THREE.Color(p.color);
+      const mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(size, 32, 32),
+        new THREE.MeshStandardMaterial({ color, emissive: color.clone().multiplyScalar(0.4), roughness: 0.4, metalness: 0.2 })
+      );
+      const speed = (p.ring === 'inner' ? 0.18 : 0.10) + idx * 0.008;
+      const phase = (p.angle * Math.PI) / 180;
+      mesh.userData = { radius, speed, phase, portfolio: p, baseScale: 1, targetScale: 1 };
+      scene.add(mesh);
+      planetMeshes.push(mesh);
+
+      const label = document.createElement('div');
+      label.className = "planet-label";
+      label.textContent = p.name;
+      label.style.position = "absolute";
+      labelLayer.appendChild(label);
+      mesh.userData.label = label;
+    });
+
+    // lights
+    scene.add(new THREE.AmbientLight(0x8090c0, 0.6));
+    const pl = new THREE.PointLight(0xffd98a, 2.4, 80);
+    pl.position.set(0,0,0);
+    scene.add(pl);
+
+    // raycaster
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2(-10,-10);
+    let hovered = null;
+
+    function onMove(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+    function onClick() {
+      if (hovered) {
+        onPickPortfolio(hovered.userData.portfolio);
+      }
+    }
+    renderer.domElement.addEventListener('pointermove', onMove);
+    renderer.domElement.addEventListener('click', onClick);
+
+    function projectToScreen(vec3) {
+      const v = vec3.clone().project(camera);
+      return {
+        x: (v.x * 0.5 + 0.5) * W(),
+        y: (-v.y * 0.5 + 0.5) * H(),
+      };
+    }
+
+    let raf, t0 = performance.now();
+    function loop() {
+      const t = (performance.now() - t0) / 1000;
+
+      sunGroup.rotation.y = t * 0.1;
+      const pulse = 1 + Math.sin(t * 1.4) * 0.03;
+      sun.scale.setScalar(pulse);
+
+      planetMeshes.forEach(m => {
+        const { radius, speed, phase } = m.userData;
+        m.position.x = Math.cos(phase + t * speed) * radius;
+        m.position.z = Math.sin(phase + t * speed) * radius;
+        m.position.y = Math.sin(t * 0.3 + phase) * 0.2;
+        m.rotation.y += 0.01;
+
+        // smooth scale toward target
+        m.userData.baseScale += (m.userData.targetScale - m.userData.baseScale) * 0.12;
+        m.scale.setScalar(m.userData.baseScale);
+
+        // label
+        const sp = projectToScreen(m.position.clone().add(new THREE.Vector3(0, 0.8, 0)));
+        m.userData.label.style.left = sp.x + 'px';
+        m.userData.label.style.top  = sp.y + 'px';
+      });
+
+      // sun label position
+      const sunSp = projectToScreen(new THREE.Vector3(0,0,0));
+      sunLabel.style.left = sunSp.x + 'px';
+      sunLabel.style.top  = sunSp.y + 'px';
+
+      stars.rotation.y = t * 0.005;
+
+      // hover detection
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(planetMeshes, false);
+      if (hits.length) {
+        const m = hits[0].object;
+        if (hovered && hovered !== m) hovered.userData.targetScale = 1;
+        hovered = m;
+        hovered.userData.targetScale = 1.4;
+        renderer.domElement.style.cursor = 'pointer';
+      } else {
+        if (hovered) hovered.userData.targetScale = 1;
+        hovered = null;
+        renderer.domElement.style.cursor = 'default';
+      }
+
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(loop);
+    }
+    loop();
+
+    function onResize() {
+      camera.aspect = W() / H();
+      camera.updateProjectionMatrix();
+      renderer.setSize(W(), H());
+    }
+    window.addEventListener('resize', onResize);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', onResize);
+      renderer.domElement.removeEventListener('pointermove', onMove);
+      renderer.domElement.removeEventListener('click', onClick);
+      renderer.dispose();
+      mount.removeChild(renderer.domElement);
+      mount.removeChild(labelLayer);
+    };
+  }, [onPickPortfolio]);
+
+  return (
+    <section id="top" className="relative h-screen min-h-[720px] w-full overflow-hidden">
+      <div ref={mountRef} className="absolute inset-0" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-navy-900" />
+
+      {/* top-left overlay */}
+      <div className="absolute z-10 top-28 left-6 md:left-12 max-w-md">
+        <p className="text-xs tracking-[0.35em] uppercase text-gold/80 mb-3">Est. 2008</p>
+        <h1 className="display text-4xl md:text-5xl leading-tight text-white">
+          A constellation of <span className="text-gold">student & alumni</span> at IIT Bombay.
+        </h1>
+        <p className="mt-5 text-white/70 text-sm md:text-[15px] leading-relaxed">{ABOUT}</p>
+      </div>
+
+      {/* bottom ticker */}
+      <div className="absolute z-10 bottom-10 inset-x-0 flex flex-col items-center">
+        <p className="text-[10px] tracking-[0.4em] uppercase text-white/40 mb-2">Now Orbiting</p>
+        <EventsTicker />
+        <p className="mt-6 text-[10px] tracking-[0.3em] uppercase text-white/30">Click a planet to explore the portfolio</p>
+      </div>
+    </section>
+  );
+}
+
+function EventsTicker() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setI(v => (v+1) % TICKER_ITEMS.length), 2200);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="h-10 flex items-center justify-center overflow-hidden relative">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={i}
+          initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -24, opacity: 0 }}
+          transition={{ duration: 0.5, ease: [0.22,1,0.36,1] }}
+          className="display text-2xl md:text-3xl text-gold-soft"
+        >
+          {TICKER_ITEMS[i]}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ===================== DRAWER ===================== */
+
+function PortfolioDrawer({ portfolio, onClose }) {
+  return (
+    <AnimatePresence>
+      {portfolio && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
+          />
+          <motion.aside
+            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+            transition={{ type: 'tween', duration: 0.45, ease: [0.22,1,0.36,1] }}
+            className="fixed top-0 right-0 z-[61] h-full w-full md:w-[480px] bg-navy-900/95 border-l border-white/10 overflow-y-auto"
+          >
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-8">
+                <span className="text-[10px] tracking-[0.4em] uppercase text-white/40">Portfolio</span>
+                <button onClick={onClose} className="text-white/60 hover:text-gold text-2xl leading-none">×</button>
+              </div>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="w-3 h-3 rounded-full" style={{ background: portfolio.color, boxShadow: `0 0 16px ${portfolio.color}` }} />
+                <h2 className="display text-4xl text-white">{portfolio.name}</h2>
+              </div>
+              <p className="text-white/75 leading-relaxed mt-6">{portfolio.mission}</p>
+              <p className="text-white/55 leading-relaxed mt-4 text-sm">{portfolio.extra}</p>
+
+              <h3 className="mt-10 mb-4 text-xs tracking-[0.3em] uppercase text-gold/80">Team</h3>
+              <div className="grid grid-cols-3 gap-3">
+                {[1,2,3].map(i => (
+                  <div key={i} className="rounded-xl bg-white/[0.03] border border-white/10 p-4 text-center">
+                    <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-gold/60 to-gold-deep mb-3" />
+                    <p className="text-white/80 text-sm">Member {i}</p>
+                    <p className="text-white/40 text-xs mt-1">{portfolio.name} Lead</p>
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="mt-10 mb-4 text-xs tracking-[0.3em] uppercase text-gold/80">Key Events</h3>
+              <div className="space-y-2">
+                {portfolio.events.map(e => (
+                  <a key={e} href="#" className="flex items-center justify-between px-4 py-3 rounded-lg bg-white/[0.03] border border-white/10 hover:border-gold/40 hover:bg-white/[0.05] transition">
+                    <span className="text-white/85">{e}</span>
+                    <span className="text-gold text-sm">Visit Site →</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ===================== CAROUSEL ===================== */
+
+function Carousel() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setI(v => (v+1) % CAROUSEL_IMAGES.length), 5000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <section className="relative py-24 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <p className="text-xs tracking-[0.35em] uppercase text-gold/80 mb-2">Moments</p>
+            <h2 className="display text-3xl md:text-4xl text-white">A look at our year</h2>
+          </div>
+          <div className="hidden md:flex gap-2">
+            <button onClick={() => setI((i-1+CAROUSEL_IMAGES.length)%CAROUSEL_IMAGES.length)} className="w-10 h-10 rounded-full border border-white/15 text-white/70 hover:text-gold hover:border-gold/50">‹</button>
+            <button onClick={() => setI((i+1)%CAROUSEL_IMAGES.length)} className="w-10 h-10 rounded-full border border-white/15 text-white/70 hover:text-gold hover:border-gold/50">›</button>
+          </div>
+        </div>
+        <div className="relative aspect-[16/8] rounded-3xl overflow-hidden border border-white/10 shadow-card bg-navy-800">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.9, ease: [0.22,1,0.36,1] }}
+              className="absolute inset-0"
+            >
+              <img
+                src={CAROUSEL_IMAGES[i]}
+                alt={`SARC moment ${i+1}`}
+                className="w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.style.display='none'; }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-navy-700/40 via-transparent to-navy-900/60" />
+              <div className="absolute bottom-6 left-6 text-white/80 text-sm tracking-widest uppercase">{String(i+1).padStart(2,'0')} / {String(CAROUSEL_IMAGES.length).padStart(2,'0')}</div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        <div className="flex justify-center gap-2 mt-6">
+          {CAROUSEL_IMAGES.map((_, idx) => (
+            <button key={idx} onClick={() => setI(idx)}
+              className={`h-1.5 rounded-full transition-all ${idx===i ? 'w-10 bg-gold' : 'w-2 bg-white/20'}`} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ===================== EVENTS SECTION ===================== */
+
+function EventsSection() {
+  const badgeStyle = (s) => ({
+    Upcoming: "bg-gold/15 text-gold border-gold/30",
+    Ongoing:  "bg-emerald-400/15 text-emerald-300 border-emerald-400/30",
+    Past:     "bg-white/5 text-white/50 border-white/15",
+  }[s]);
+  return (
+    <section id="events-section" className="relative py-28 px-6 border-t border-white/5">
+      <div className="max-w-6xl mx-auto">
+        <p className="text-xs tracking-[0.35em] uppercase text-gold/80 mb-2">Events</p>
+        <h2 className="display text-3xl md:text-5xl text-white mb-12">Where alumni and students meet.</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {EVENT_CARDS.map((e, idx) => (
+            <motion.a
+              key={e.name}
+              href="#"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.55, delay: idx * 0.06 }}
+              whileHover={{ y: -6 }}
+              className="group block rounded-2xl border border-white/10 bg-white/[0.025] p-7 hover:border-gold/40 hover:shadow-glow transition"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <span className={`text-[10px] tracking-[0.25em] uppercase px-2.5 py-1 rounded-full border ${badgeStyle(e.status)}`}>{e.status}</span>
+                <span className="text-white/30 text-xs">0{idx+1}</span>
+              </div>
+              <h3 className="display text-2xl text-white mb-3">{e.name}</h3>
+              <p className="text-white/60 text-sm leading-relaxed mb-6">{e.desc}</p>
+              <span className="text-gold text-sm group-hover:translate-x-1 inline-block transition">Visit Site →</span>
+            </motion.a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ===================== PORTFOLIO SECTIONS ===================== */
+
+function PortfolioSections({ onOpen }) {
+  return (
+    <section id="team" className="relative py-28 px-6 border-t border-white/5">
+      <div className="max-w-6xl mx-auto">
+        <p className="text-xs tracking-[0.35em] uppercase text-gold/80 mb-2">Portfolios</p>
+        <h2 className="display text-3xl md:text-5xl text-white mb-16">Eight orbits. One cell.</h2>
+        <div className="space-y-24">
+          {PORTFOLIOS.map((p, idx) => {
+            const reverse = idx % 2 === 1;
+            return (
+              <motion.div
+                id={`portfolio-${p.id}`}
+                key={p.id}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.7 }}
+                className={`grid md:grid-cols-5 gap-10 items-center ${reverse ? 'md:[&>*:first-child]:order-2' : ''}`}
+              >
+                <div className="md:col-span-2 relative">
+                  <div className="aspect-square rounded-3xl border border-white/10 flex items-center justify-center relative overflow-hidden"
+                    style={{ background: `radial-gradient(circle at 50% 50%, ${p.color}33, transparent 70%)` }}>
+                    <div className="w-24 h-24 rounded-full"
+                      style={{ background: p.color, boxShadow: `0 0 60px ${p.color}` }} />
+                    <span className="absolute bottom-6 left-6 text-[10px] tracking-[0.3em] uppercase text-white/40">{p.ring} orbit</span>
+                  </div>
+                </div>
+                <div className="md:col-span-3">
+                  <h3 className="display text-3xl md:text-4xl text-white mb-4">{p.name}</h3>
+                  <p className="text-white/75 leading-relaxed">{p.mission}</p>
+                  <p className="text-white/50 leading-relaxed mt-4 text-sm">{p.extra}</p>
+                  <button onClick={() => onOpen(p)} className="mt-6 inline-flex items-center gap-2 text-gold hover:text-gold-soft text-sm tracking-wide">
+                    Explore portfolio →
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ===================== FOOTER ===================== */
+
+function Footer({ onJump }) {
+  return (
+    <footer className="relative border-t border-white/10 mt-12 py-16 px-6 bg-navy-950">
+      <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10">
+        <div>
+          <div className="flex items-baseline gap-2 mb-4">
+            <span className="display text-2xl text-gold">SARC</span>
+            <span className="text-white/30">|</span>
+            <span className="text-xs tracking-[0.3em] text-white/70 uppercase">IIT Bombay</span>
+          </div>
+          <p className="text-white/55 text-sm leading-relaxed">Connect with us!</p>
+          <div className="flex gap-3 mt-5">
+            {SOCIALS.map(s => (
+              <a key={s.name} href={s.href} aria-label={s.name}
+                 className="w-10 h-10 rounded-full border border-white/15 flex items-center justify-center text-white/60 hover:text-gold hover:border-gold/50 transition">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d={s.path}/></svg>
+              </a>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs tracking-[0.3em] uppercase text-white/40 mb-4">Portfolios</p>
+          <ul className="space-y-2 text-sm">
+            {PORTFOLIOS.map(p => (
+              <li key={p.id}>
+                <button onClick={() => onJump(`portfolio-${p.id}`)} className="text-white/70 hover:text-gold">{p.name}</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="text-xs tracking-[0.3em] uppercase text-white/40 mb-4">More</p>
+          <ul className="space-y-2 text-sm">
+            <li><a href="#events-section" className="text-white/70 hover:text-gold">Events</a></li>
+            <li><a href="#team" className="text-white/70 hover:text-gold">Team</a></li>
+            <li><a href="#top" className="text-white/70 hover:text-gold">Back to top</a></li>
+          </ul>
+        </div>
+      </div>
+      <div className="max-w-6xl mx-auto mt-12 pt-6 border-t border-white/5 flex flex-col md:flex-row items-center justify-between text-white/40 text-xs">
+        <p>© 2026 Made with 💙 by SARC</p>
+        <p className="mt-3 md:mt-0 tracking-[0.3em] uppercase">Student Alumni Relations Cell</p>
+      </div>
+    </footer>
+  );
+}
+
+/* ===================== APP ===================== */
+
+function App() {
+  const [drawer, setDrawer] = useState(null);
+  const onJump = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  return (
+    <>
+      <Nav onJump={onJump} />
+      <Hero onPickPortfolio={setDrawer} />
+      <Carousel />
+      <EventsSection />
+      <PortfolioSections onOpen={setDrawer} />
+      <Footer onJump={onJump} />
+      <PortfolioDrawer portfolio={drawer} onClose={() => setDrawer(null)} />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
