@@ -200,9 +200,15 @@ function Hero({ onPickPortfolio }) {
     const H = () => mount.clientHeight;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(55, W() / H(), 0.1, 2000);
-    camera.position.set(0, 6, 26);
+    const camera = new THREE.PerspectiveCamera(50, W() / H(), 0.1, 2000);
+    camera.position.set(0, 9, 28);
     camera.lookAt(0, 0, 0);
+
+    // tilt the whole orbital system for depth
+    const system = new THREE.Group();
+    system.rotation.x = 0.35;
+    system.rotation.z = -0.08;
+    scene.add(system);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -215,21 +221,38 @@ function Hero({ onPickPortfolio }) {
     labelLayer.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;";
     mount.appendChild(labelLayer);
 
-    // starfield
-    const starGeo = new THREE.BufferGeometry();
-    const starCount = 1200;
-    const positions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount; i++) {
-      const r = 200 + Math.random() * 400;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      positions[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-      positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-      positions[i*3+2] = r * Math.cos(phi);
+    // starfield — two layers, parallax
+    function makeStars(count, rMin, rMax, color, size, opacity) {
+      const g = new THREE.BufferGeometry();
+      const pos = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        const r = rMin + Math.random() * (rMax - rMin);
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+        pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+        pos[i*3+2] = r * Math.cos(phi);
+      }
+      g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      return new THREE.Points(g, new THREE.PointsMaterial({ color, size, transparent: true, opacity, depthWrite: false }));
     }
-    starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xbfd0ff, size: 0.7, transparent: true, opacity: 0.7 }));
-    scene.add(stars);
+    const starsFar  = makeStars(1400, 250, 600, 0xbfd0ff, 0.6, 0.55);
+    const starsNear = makeStars(400, 80, 180, 0xfff0c8, 1.1, 0.85);
+    scene.add(starsFar); scene.add(starsNear);
+
+    // soft nebula sprites (colored fog)
+    function nebula(color, scale, x, y, z) {
+      const c = document.createElement('canvas'); c.width = c.height = 256;
+      const cx = c.getContext('2d');
+      const g = cx.createRadialGradient(128,128,0,128,128,128);
+      g.addColorStop(0, color + '88'); g.addColorStop(0.5, color + '22'); g.addColorStop(1, color + '00');
+      cx.fillStyle = g; cx.fillRect(0,0,256,256);
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+      s.scale.set(scale, scale, 1); s.position.set(x, y, z); return s;
+    }
+    scene.add(nebula('#5b7cff', 60, -40, 10, -80));
+    scene.add(nebula('#ff8a5b', 50,  50, -8, -90));
+    scene.add(nebula('#a16bff', 45,   0, 30, -120));
 
     // SUN
     const sunGroup = new THREE.Group();
