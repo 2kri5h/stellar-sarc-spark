@@ -294,17 +294,21 @@ function Hero({ onPickPortfolio }) {
       const g = new THREE.BufferGeometry().setFromPoints(pts);
       return new THREE.Line(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
     }
-    const R_INNER = 6.5;
-    const R_OUTER = 11.5;
-    system.add(makeRing(R_INNER, 0x5b7cff, 0.35));
-    system.add(makeRing(R_OUTER, 0xffb066, 0.28));
+    const R_START = 5.0;
+    const R_STEP = 1.6;
+    for (let i = 0; i < 8; i++) {
+      const r = R_START + i * R_STEP;
+      const color = i % 2 === 0 ? 0x5b7cff : 0xffb066;
+      const opacity = 0.35 - i * 0.025;
+      system.add(makeRing(r, color, opacity));
+    }
 
     // Asteroid dust belt between rings
     const beltGeo = new THREE.BufferGeometry();
     const beltN = 600;
     const beltPos = new Float32Array(beltN * 3);
     for (let i = 0; i < beltN; i++) {
-      const r = 8.6 + (Math.random() - 0.5) * 1.2;
+      const r = 10.5 + (Math.random() - 0.5) * 2.0;
       const a = Math.random() * Math.PI * 2;
       beltPos[i*3]   = Math.cos(a) * r;
       beltPos[i*3+1] = (Math.random() - 0.5) * 0.4;
@@ -317,15 +321,15 @@ function Hero({ onPickPortfolio }) {
     // planets
     const planetMeshes = [];
     PORTFOLIOS.forEach((p, idx) => {
-      const radius = p.ring === 'inner' ? R_INNER : R_OUTER;
-      const size = p.ring === 'inner' ? 0.55 : 0.78;
+      const radius = R_START + idx * R_STEP;
+      const size = 0.42 + idx * 0.04;
       const color = new THREE.Color(p.color);
       const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(size, 32, 32),
         new THREE.MeshStandardMaterial({ color, emissive: color.clone().multiplyScalar(0.35), roughness: 0.55, metalness: 0.25 })
       );
-      // Give every other outer planet a Saturn-style ring
-      if (p.ring === 'outer' && idx % 2 === 0) {
+      // Give every other planet a Saturn-style ring
+      if (idx % 2 === 0) {
         const ring = new THREE.Mesh(
           new THREE.RingGeometry(size * 1.4, size * 2.1, 48),
           new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.35 })
@@ -333,8 +337,8 @@ function Hero({ onPickPortfolio }) {
         ring.rotation.x = Math.PI / 2.4;
         mesh.add(ring);
       }
-      const speed = (p.ring === 'inner' ? 0.18 : 0.10) + idx * 0.008;
-      const phase = (p.angle * Math.PI) / 180;
+      const speed = 0.5 / Math.sqrt(radius);
+      const phase = (idx * (360 / 8) * Math.PI) / 180;
       mesh.userData = { radius, speed, phase, portfolio: p, baseScale: 1, targetScale: 1 };
       system.add(mesh);
       planetMeshes.push(mesh);
@@ -404,7 +408,8 @@ function Hero({ onPickPortfolio }) {
         m.scale.setScalar(m.userData.baseScale);
 
         // label uses WORLD position (system is tilted)
-        m.getWorldPosition(tmp); tmp.y += 0.9;
+        const currentSize = 0.42 + planetMeshes.indexOf(m) * 0.04;
+        m.getWorldPosition(tmp); tmp.y += currentSize * m.userData.baseScale + 0.35;
         const sp = projectToScreen(tmp);
         m.userData.label.style.left = sp.x + 'px';
         m.userData.label.style.top  = sp.y + 'px';
@@ -507,15 +512,15 @@ function EventsTicker() {
 /* ===================== ABOUT ===================== */
 function AboutSection() {
   return (
-    <section id="about" className="relative bg-navy-900 py-28 md:py-36 px-6 md:px-12 overflow-hidden">
+    <section id="about" className="relative bg-navy-900 py-16 md:py-20 px-6 md:px-12 overflow-hidden">
       <div className="absolute inset-0 pointer-events-none opacity-[0.07]"
            style={{background: "radial-gradient(800px 400px at 20% 30%, #ffd98a, transparent), radial-gradient(700px 500px at 80% 70%, #5b7cff, transparent)"}} />
       <div className="relative max-w-5xl mx-auto">
         <p className="text-[11px] tracking-[0.4em] uppercase text-gold/80 mb-6">About SARC</p>
-        <p className="display text-2xl md:text-[2.1rem] leading-[1.45] text-white/90">
+        <p className="display text-lg md:text-[1.35rem] leading-[1.6] text-white/85 max-w-4xl">
           {ABOUT}
         </p>
-        <div className="mt-12 h-px w-24 bg-gold/50" />
+        <div className="mt-8 h-px w-24 bg-gold/50" />
         <p className="mt-6 text-sm tracking-[0.3em] uppercase text-white/40">Dean ACR Office · IIT Bombay</p>
       </div>
     </section>
@@ -633,37 +638,199 @@ function Carousel() {
 /* ===================== EVENTS SECTION ===================== */
 
 function EventsSection() {
-  const badgeStyle = (s) => ({
-    Upcoming: "bg-gold/15 text-gold border-gold/30",
-    Ongoing:  "bg-emerald-400/15 text-emerald-300 border-emerald-400/30",
-    Past:     "bg-white/5 text-white/50 border-white/15",
-  }[s]);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const eventDetails = useMemo(() => [
+    {
+      name: "Alumination",
+      desc: "The flagship alumni-student gathering of the year, bringing together icons from various fields to interact, inspire, and guide the student community at IIT Bombay.",
+      status: "Upcoming",
+      date: "October 2026",
+      stats: { primary: "1,500+", label: "Expected Attendees", percent: 92 },
+      milestones: ["Event Announcement", "Registration Open", "Speaker Reveal", "Grand Inauguration"],
+      coordinates: "RA 10h 42m, Dec +12°",
+    },
+    {
+      name: "Seekout",
+      desc: "SARC's signature crypt-hunt experience by Media & PR. Decipher clues, solve puzzles, and connect with alumni in a fast-paced virtual hunt.",
+      status: "Upcoming",
+      date: "September 2026",
+      stats: { primary: "800+", label: "Teams Registered", percent: 65 },
+      milestones: ["Teaser Drop", "Team Formation", "Clue Release", "Leaderboard Lock"],
+      coordinates: "RA 14h 22m, Dec -08°",
+    },
+    {
+      name: "Yearbook",
+      desc: "Capturing memories that last a lifetime. The Yearbook team compiles messages, photos, and nostalgic moments of the graduating batch into a beautiful keepsake.",
+      status: "Ongoing",
+      date: "Graduating Batch",
+      stats: { primary: "2,400+", label: "Profiles Submitted", percent: 88 },
+      milestones: ["Profile Setup", "Article Submissions", "Photo Selection", "Final Print"],
+      coordinates: "RA 18h 05m, Dec +40°",
+    },
+    {
+      name: "ASMP",
+      desc: "Alumni-Student Mentorship Program. Bridging the gap by pairing current students with experienced alumni mentors globally to provide career guidance and networking.",
+      status: "Ongoing",
+      date: "Year-Round",
+      stats: { primary: "550+", label: "Active Mentorships", percent: 95 },
+      milestones: ["Application Period", "Smart Matching", "Mid-term Review", "Certificate Handout"],
+      coordinates: "RA 04h 55m, Dec +15°",
+    },
+    {
+      name: "ILP",
+      desc: "Industrial Learning Program. Fostering real-world industry exposure through alumni-guided projects, industrial visits, and hands-on workshops.",
+      status: "Past",
+      date: "Completed March",
+      stats: { primary: "12 Projects", label: "Completed", percent: 100 },
+      milestones: ["Problem Statements", "Team Selection", "Mid-term Checkpoint", "Final Presentation"],
+      coordinates: "RA 21h 30m, Dec -22°",
+    },
+    {
+      name: "PMP",
+      desc: "Placement Mentoring Program by HDA. Dedicated prep sessions, mock interviews, and resume reviews conducted by alumni to help students secure top placements.",
+      status: "Past",
+      date: "Completed April",
+      stats: { primary: "98%", label: "Placement Success", percent: 100 },
+      milestones: ["Resume Filtering", "Alumni Matching", "Mock Interviews", "Placement Phase"],
+      coordinates: "RA 08h 12m, Dec +28°",
+    },
+  ], []);
+
+  const active = eventDetails[activeIdx];
+
+  const statusColors = {
+    Upcoming: { text: "text-gold", bg: "bg-gold/10", border: "border-gold/30", glow: "shadow-[0_0_15px_rgba(240,198,116,0.3)]" },
+    Ongoing:  { text: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30", glow: "shadow-[0_0_15px_rgba(52,211,153,0.3)]" },
+    Past:     { text: "text-white/50", bg: "bg-white/5", border: "border-white/10", glow: "" },
+  };
+
   return (
-    <section id="events-section" className="relative py-28 px-6 border-t border-white/5">
-      <div className="max-w-6xl mx-auto">
-        <p className="text-xs tracking-[0.35em] uppercase text-gold/80 mb-2">Events</p>
-        <h2 className="display text-3xl md:text-5xl text-white mb-12">Where alumni and students meet.</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {EVENT_CARDS.map((e, idx) => (
-            <motion.a
-              key={e.name}
-              href="#"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.55, delay: idx * 0.06 }}
-              whileHover={{ y: -6 }}
-              className="group block rounded-2xl border border-white/10 bg-white/[0.025] p-7 hover:border-gold/40 hover:shadow-glow transition"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <span className={`text-[10px] tracking-[0.25em] uppercase px-2.5 py-1 rounded-full border ${badgeStyle(e.status)}`}>{e.status}</span>
-                <span className="text-white/30 text-xs">0{idx+1}</span>
-              </div>
-              <h3 className="display text-2xl text-white mb-3">{e.name}</h3>
-              <p className="text-white/60 text-sm leading-relaxed mb-6">{e.desc}</p>
-              <span className="text-gold text-sm group-hover:translate-x-1 inline-block transition">Visit Site →</span>
-            </motion.a>
-          ))}
+    <section id="events-section" className="relative py-28 px-6 border-t border-white/5 overflow-hidden">
+      {/* Decorative cosmic background details */}
+      <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] bg-[#5b7cff]/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[#ffd98a]/3 rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="max-w-6xl mx-auto relative z-10">
+        <div className="mb-16">
+          <p className="text-xs tracking-[0.35em] uppercase text-gold/80 mb-2">Cosmic Schedule</p>
+          <h2 className="display text-3xl md:text-5xl text-white">Connecting Orbits</h2>
+          <p className="text-white/45 text-sm mt-3 max-w-xl">
+            Explore the flagship initiatives and year-round programs that bridge the gap between IIT Bombay's bright minds and stellar alumni.
+          </p>
+        </div>
+
+        {/* Interactive Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
+          {/* Left: The Timeline Menu (5 cols) */}
+          <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
+            <div className="relative border-l border-white/10 pl-6 md:pl-8 space-y-6 py-2">
+              {eventDetails.map((e, idx) => {
+                const isActive = idx === activeIdx;
+                const sc = statusColors[e.status];
+                return (
+                  <div
+                    key={e.name}
+                    onClick={() => setActiveIdx(idx)}
+                    className={`group relative cursor-pointer transition-all duration-300 ${isActive ? 'translate-x-2' : ''}`}
+                  >
+                    {/* Timeline Node dot */}
+                    <div className={`absolute -left-[32px] md:-left-[40px] top-[18px] w-4 h-4 rounded-full border bg-navy-950 flex items-center justify-center transition-all duration-300 ${isActive ? `${sc.border} scale-125 ${sc.glow}` : 'border-white/20 group-hover:border-gold/50'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full transition-all ${isActive ? (e.status === 'Past' ? 'bg-white/50' : 'bg-gold') : 'bg-transparent group-hover:bg-white/30'}`} />
+                    </div>
+
+                    <div className={`rounded-xl border p-4 transition-all duration-300 bg-white/[0.01] ${isActive ? 'border-white/20 bg-white/[0.03] shadow-[0_4px_20px_rgba(0,0,0,0.4)]' : 'border-transparent hover:border-white/10 hover:bg-white/[0.015]'}`}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-white/40 text-[10px] tracking-widest uppercase">{e.date}</span>
+                        <span className={`text-[9px] tracking-wider uppercase px-2 py-0.5 rounded-full border ${sc.text} ${sc.bg} ${sc.border}`}>{e.status}</span>
+                      </div>
+                      <h3 className={`display text-xl transition ${isActive ? 'text-gold-soft' : 'text-white/80 group-hover:text-white'}`}>{e.name}</h3>
+                      <p className="text-xs text-white/50 line-clamp-1 mt-1">{e.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right: The Holographic Event Visualizer (7 cols) */}
+          <div className="lg:col-span-7 flex">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active.name}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+                className="w-full rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-white/[0.005] p-6 md:p-8 flex flex-col justify-between relative overflow-hidden backdrop-blur-md shadow-card"
+              >
+                {/* Visual orbit line accent in card background */}
+                <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full border border-white/5 pointer-events-none" />
+                <div className="absolute -right-20 -top-20 w-72 h-72 rounded-full border border-white/5 pointer-events-none" />
+
+                <div>
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+                    <div>
+                      <span className="text-[10px] tracking-[0.3em] uppercase text-white/40 font-mono">{active.coordinates}</span>
+                      <h3 className="display text-3xl md:text-4xl text-white mt-1">{active.name}</h3>
+                    </div>
+                    <span className={`text-xs tracking-[0.2em] uppercase px-3 py-1.5 rounded-full border ${statusColors[active.status].text} ${statusColors[active.status].bg} ${statusColors[active.status].border}`}>
+                      {active.status}
+                    </span>
+                  </div>
+
+                  <p className="text-white/70 leading-relaxed text-sm md:text-base mb-8">
+                    {active.desc}
+                  </p>
+
+                  {/* Telemetry Stats Bar */}
+                  <div className="mb-8">
+                    <div className="flex justify-between items-baseline mb-2">
+                      <span className="text-xs tracking-wider text-white/55">{active.stats.label}</span>
+                      <span className="text-sm font-semibold text-gold-soft">{active.stats.primary}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${active.stats.percent}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className={`h-full rounded-full ${active.status === 'Past' ? 'bg-white/30' : 'bg-gradient-to-r from-gold/70 to-gold-soft'}`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Orbital Milestones */}
+                  <div>
+                    <p className="text-[10px] tracking-[0.3em] uppercase text-white/40 mb-4">Orbital Milestones</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {active.milestones.map((m, idx) => {
+                        const isPast = active.status === 'Past' || idx < (active.status === 'Upcoming' ? 1 : 3);
+                        return (
+                          <div key={m} className="flex flex-col">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className={`w-2 h-2 rounded-full ${isPast ? 'bg-gold shadow-[0_0_8px_#f0c674]' : 'bg-white/10'}`} />
+                              <span className="text-[10px] text-white/30 font-mono">M0{idx+1}</span>
+                            </div>
+                            <span className={`text-[11px] font-medium leading-tight ${isPast ? 'text-white/80' : 'text-white/40'}`}>{m}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-white/5 flex flex-wrap gap-4 items-center justify-between">
+                  <span className="text-xs text-white/40 font-mono">Date: {active.date}</span>
+                  <a
+                    href="#"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-white tracking-widest uppercase hover:bg-gold hover:text-navy-950 hover:border-gold hover:shadow-glow transition-all duration-300"
+                  >
+                    Establish Connection
+                  </a>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </section>
@@ -778,8 +945,8 @@ function App() {
       <Nav onJump={onJump} />
       <Hero onPickPortfolio={setDrawer} />
       <AboutSection />
-      <Carousel />
       <EventsSection />
+      <Carousel />
       <PortfolioSections onOpen={setDrawer} />
       <Footer onJump={onJump} />
       <PortfolioDrawer portfolio={drawer} onClose={() => setDrawer(null)} />
